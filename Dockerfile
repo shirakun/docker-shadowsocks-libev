@@ -70,9 +70,9 @@ RUN set -ex \
 
 # Shadowsocks environment variables
 ENV SERVER_HOST 0.0.0.0
-ENV SERVER_PORT 8388
-ENV PASSWORD shadowsocks
-ENV ENCRYPT_METHOD chacha20-ietf-poly1305
+ENV SERVER_PORT 8981
+ENV PASSWORD 123456
+ENV ENCRYPT_METHOD aes-256-cfb
 ENV TIMEOUT 600
 ENV DNS_ADDR 8.8.8.8
 ENV PLUGIN obfs-server
@@ -90,5 +90,4 @@ ENTRYPOINT ss-server -s "$SERVER_HOST" \
                      --plugin "$PLUGIN" \
                      --plugin-opts "$PLUGIN_OPTS" \
                      -u \
-                     --fast-open \
                      --reuse-port
