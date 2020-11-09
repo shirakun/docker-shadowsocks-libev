@@ -1,74 +1,28 @@
-FROM alpine
+  
+# build for amd64
+FROM alpine:latest
 
-MAINTAINER Acris Liu "acrisliu@gmail.com"
+MAINTAINER Shira Kagurazaka "nico@ni-co.moe"
 
-ENV SHADOWSOCKS_LIBEV_VERSION v3.1.3
-ENV SIMPLE_OBFS_VERSION v0.0.5
-
-# Build shadowsocks-libev and simple-obfs
-RUN set -ex \
-
-    # Install dependencies
-    && apk add --no-cache --virtual .build-deps \
-               autoconf \
-               automake \
-               build-base \
-               libev-dev \
-               libtool \
-               linux-headers \
-               udns-dev \
-               libsodium-dev \
-               mbedtls-dev \
-               pcre-dev \
-               tar \
-               udns-dev \
-               c-ares-dev \
-               git \
-
-    # Build shadowsocks-libev
-    && mkdir -p /tmp/build-shadowsocks-libev \
-    && cd /tmp/build-shadowsocks-libev \
-    && git clone https://github.com/shadowsocks/shadowsocks-libev.git \
-    && cd shadowsocks-libev \
-    && git checkout "$SHADOWSOCKS_LIBEV_VERSION" \
+RUN apk update \
+    && apk add --no-cache build-base git autoconf automake gettext pcre-dev libtool asciidoc xmlto udns-dev c-ares-dev libev-dev libsodium-dev mbedtls-dev linux-headers \
+    && git clone https://github.com/shadowsocks/shadowsocks-libev /tmp/shadowsocks-libev \
+    && cd /tmp/shadowsocks-libev \
     && git submodule update --init --recursive \
     && ./autogen.sh \
-    && ./configure --disable-documentation \
+    && ./configure \
+    && make \
     && make install \
-    && ssRunDeps="$( \
-        scanelf --needed --nobanner /usr/local/bin/ss-server \
-            | awk '{ gsub(/,/, "\nso:", $2); print "so:" $2 }' \
-            | xargs -r apk info --installed \
-            | sort -u \
-    )" \
-    && apk add --no-cache --virtual .ss-rundeps $ssRunDeps \
-    && cd / \
-    && rm -rf /tmp/build-shadowsocks-libev \
-
-    # Build simple-obfs
-    && mkdir -p /tmp/build-simple-obfs \
-    && cd /tmp/build-simple-obfs \
-    && git clone https://github.com/shadowsocks/simple-obfs.git \
-    && cd simple-obfs \
-    && git checkout "$SIMPLE_OBFS_VERSION" \
-    && git submodule update --init --recursive \
+    && git clone https://github.com/shadowsocks/simple-obfs.git /tmp/simple-obfs \
+    && cd /tmp/simple-obfs && git submodule update --init --recursive \
     && ./autogen.sh \
-    && ./configure --disable-documentation \
+    && ./configure \
+    && make \
     && make install \
-    && simpleObfsRunDeps="$( \
-        scanelf --needed --nobanner /usr/local/bin/obfs-server \
-            | awk '{ gsub(/,/, "\nso:", $2); print "so:" $2 }' \
-            | xargs -r apk info --installed \
-            | sort -u \
-    )" \
-    && apk add --no-cache --virtual .simple-obfs-rundeps $simpleObfsRunDeps \
-    && cd / \
-    && rm -rf /tmp/build-simple-obfs \
-    
-    # Delete dependencies
-    && apk del .build-deps
+    && apk del build-base git autoconf automake gettext libtool asciidoc xmlto linux-headers \
+    && rm -rf /tmp/shadowsocks-libev \
+    && rm -rf /tmp/simple-obfs
 
-# Shadowsocks environment variables
 ENV SERVER_HOST 0.0.0.0
 ENV SERVER_PORT 8981
 ENV PASSWORD 123456
